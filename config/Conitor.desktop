@@ -1,0 +1,10 @@
+[Desktop Entry]
+Name=Conitor
+Version=1.0
+Comment=Connection monitor.
+Exec=gnome-terminal -t "Conitor 1.0" --geometry=80x24 -e "bash -c 'conitor'"
+Icon=/usr/share/icons/Conitor.ico
+Keywords=Security;
+Terminal=true
+Type=Application
+StartupNotify=false
