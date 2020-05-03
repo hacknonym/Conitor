@@ -33,7 +33,8 @@ MAIN_PATH=$(pwd)
 USERNAME=$(whoami)
 LOG_FILE="$MAIN_PATH/conitor.log"
 #LOG_FILE="/var/log/conitor/conitor.log"
-DOWNLOAD_PATH="$HOME/Téléchargements"
+APP_PATH="/usr/share/applications/Conitor.desktop"
+ICON_PATH="/usr/share/icons/Conitor.ico"
 NETSTAT=$(which netstat)
 
 touch $LOG_FILE
@@ -145,8 +146,8 @@ function shortcut(){
 			touch /usr/local/sbin/conitor
 			echo "#!/bin/bash" > /usr/local/sbin/conitor
 			echo "cd $MAIN_PATH && ./conitor.sh \$1 \$2 \$3" >> /usr/local/sbin/conitor
-			cp "$MAIN_PATH/config/Conitor.desktop" /usr/share/applications/Conitor.desktop
-			cp "$MAIN_PATH/icons/Conitor.ico" /usr/share/icons/Conitor.ico
+			cp "$MAIN_PATH/config/Conitor.desktop" $APP_PATH
+			cp "$MAIN_PATH/icons/Conitor.ico" $ICON_PATH
 			sudo chmod +x /usr/local/sbin/conitor
 			echo -e "[+] Used the shortcut$yellow conitor$grey"
 		fi
@@ -169,6 +170,12 @@ function launch(){
 	verify_prog "clamscan" "clamav"
 	verify_prog "xterm" "xterm"
 	verify_prog "zenity" "zenity"
+
+	default_lang="EN"
+	read -p "[?] Language (EN/FR/ES/DE/IT)> " -n 2 -e lang
+	lang="${lang:-${default_lang}}"
+	foldername=$(cat $MAIN_PATH/lang.txt | grep -ie "$lang" | cut -d ' ' -f 2)
+	DOWNLOAD_PATH="$HOME/$foldername"
 
 	default_frequency="0.1"
 	echo -ne "[?] Frequency default($yellow$default_frequency$grey s)"
@@ -232,7 +239,7 @@ function conn_block(){
 		if [ "$3" != "127.0.0.1" ] ; then
 			sudo kill $5 1> /dev/null
 			echo "$current_date :: PID $5 from $6 service was killed, connection state $1:$2 $3:$4" >> $LOG_FILE
-			notify-send --urgency normal --expire-time 2500 "$3:$4 from $6 service was kill"
+			notify-send --urgency normal --expire-time 2500 -i $ICON_PATH "$3:$4 from $6 service was kill"
 			#zenity --info --ellipsize --text="$3:$4 from $6 service was kill" & 1> /dev/null
 		fi
 	elif [ $level -eq 2 ]; then
@@ -243,7 +250,7 @@ function conn_block(){
 			if [ "$6" != "firefox-esr" -a "$6" != "tor" -a "$4" != "9050" -a "$4" != "9150" -a "$4" != "9151" ] ; then
 				sudo kill $5 1> /dev/null
 				echo "$current_date :: PID $5 from $6 service was killed, connection state $1:$2 $3:$4" >> $LOG_FILE
-				notify-send --urgency normal --expire-time 2500 "$3:$4 from $6 service was killed"
+				notify-send --urgency normal --expire-time 2500 -i $ICON_PATH "$3:$4 from $6 service was killed"
 			fi
 		fi
 	fi
@@ -257,7 +264,7 @@ function antivirus(){
 
 	MAIN_PATH=$(pwd)
 	LOG_FILE="$MAIN_PATH/conitor.log"
-	DOWNLOAD_PATH="$HOME/Téléchargements"
+	DOWNLOAD_PATH="$HOME/$foldername"
 
 	echo -e "Scanning $yellow$1$grey in progress..."
 
@@ -285,7 +292,7 @@ function antivirus(){
 	  fi
 	done
 
-	read enter
+	#read enter
 }
 
 resize -s 36 86 1> /dev/null
@@ -334,19 +341,16 @@ while [ true ] ; do
 	#Connections established
   	nb_conn_established=$(sudo $NETSTAT -punt | grep -v "::" | grep -v ":67" | grep -c "ESTABLISHED")
   	conn_established=$(
-	  	c=0
 	  	for i in $(sudo $NETSTAT -punt | grep -v "::" | grep -v ":67" | grep -e "ESTABLISHED" | cut -c 21- | tr ' ' '_') ; do 
-	  		c=$(($c + 1))
 	  		correct=$(echo -e "$i" | tr '_' ' ')
 	  		lhost=$(echo -e "$correct" | cut -d ' ' -f 1 | cut -d ':' -f 1)
 	  		lport=$(echo -e "$correct" | cut -d ' ' -f 1 | cut -d ':' -f 2)
 	  		rhost=$(echo -e "$correct" | awk '{print $2}' | cut -d ':' -f 1)
 	  		rport=$(echo -e "$correct" | awk '{print $2}' | cut -d ':' -f 2)
 	  		pid=$(echo -e "$correct" | awk '{print $4}' | cut -d '/' -f 1)
-	  		progname=$(echo -e "$correct" | awk '{print $4}' | cut -d '/' -f 2)
+	  		progname=$(echo -e "$correct" | awk '{print $4}' | cut -d '/' -f 2-)
 
 	  		conn_block "$lhost" $lport "$rhost" $rport $pid "$progname"
-
 	  		
 	  		if [ "$rhost" != "127.0.0.1" ] ; then
 	  			echo -e "[+]  $yellow$lhost$grey:$green$lport$grey\t\t$yellow$rhost$grey:$green$rport$grey    \t$pid\t$progname\t│"
@@ -361,7 +365,7 @@ while [ true ] ; do
     #Popup 'New Connections'
 	if [ $nb_conn_established -ne 0 -a $state -eq 1 ] ; then
 		state=0
-		notify-send --urgency normal --expire-time 2500 "New Connections"
+		notify-send --urgency normal --expire-time 2500 -i $ICON_PATH "New Connections"
 	elif [ $nb_conn_established -eq 0 -a $state -eq 0 ] ; then
 		state=1
 	fi
@@ -374,10 +378,30 @@ while [ true ] ; do
 		done
 		echo -e "$c"
     )
-    conn_listen=$(
-	    c=0
+    conn_listen_loopback=$(
+    	conn_listen_loopback=1  #initial state -> Good
 	    for i in $(sudo $NETSTAT -puntl | cut -c 21- | grep -e "LISTEN" | sort | tr ' ' '_') ; do
-		    c=$(($c + 1))
+		    correct=$(echo -e "$i" | tr '_' ' ')
+		    lhost=$(echo -e "$correct" | cut -d ' ' -f 1 | cut -d ':' -f 1)
+
+		    #If among all the services, there is one listening on an address range other than 127.0.0.1, then there is a potential risk
+	    	if [ "$lhost" = "127.0.0.1" ] ; then  #127.0.0.1
+		    	echo -n
+		    elif [ -z "$lhost" ] ; then
+		    	lhost=$(echo -e "$correct" | cut -d ' ' -f 1 | cut -d ':' -f 3)
+		    	if [ "$lhost" = "1" ] ; then      #::1
+		    		echo -n
+		    	else
+		    		conn_listen_loopback=0        #=0 -> do  not listen in loopback (potencial risk)
+		    	fi
+		    else
+		    	conn_listen_loopback=0
+			fi
+		done
+		echo -e "$conn_listen_loopback"
+    )
+    conn_listen=$(
+	    for i in $(sudo $NETSTAT -puntl | cut -c 21- | grep -e "LISTEN" | sort | tr ' ' '_') ; do
 		    correct=$(echo -e "$i" | tr '_' ' ')
 		    lhost=$(echo -e "$correct" | cut -d ' ' -f 1 | cut -d ':' -f 1)
 		    lport=$(echo -e "$correct" | cut -d ' ' -f 1 | cut -d ':' -f 2)
@@ -411,7 +435,7 @@ while [ true ] ; do
 
 		elif [ $nb_file -gt $old_nb_file ] ; then
 			old_nb_file="$nb_file"
-			notify-send --urgency normal --expire-time 2500 "File $file detected in Downloads"
+			notify-send --urgency normal --expire-time 2500 -i $ICON_PATH "File $file detected in Downloads"
 			#Export antivirus() function in the current shell
 			export -f antivirus
 			xterm -fa monaco -fs 12 -T "Analysis '$file'" -geometry "80x24" -bg black -fg white -e "antivirus $DOWNLOAD_PATH/\"$file\"" & 1> /dev/null
@@ -449,7 +473,7 @@ while [ true ] ; do
 			old_nb_sdb="$nb_sdb"
 			sleep 0.5
 			sdb_name=$(df -hT | grep -e "$sdb_device" | cut -d '%' -f 2 | cut -c 2-)
-			notify-send --urgency normal --expire-time 2500 "Device $sdb_name detected"
+			notify-send --urgency normal --expire-time 2500 -i $ICON_PATH "Device $sdb_name detected"
 			#Export antivirus() function in the current shell
 			export -f antivirus
 			xterm -fa monaco -fs 12 -T "Analysis '$sdb_name'" -geometry "80x24" -bg black -fg white -e "antivirus \"$sdb_name\"" & 1> /dev/null
@@ -502,7 +526,7 @@ $white╚═══════════════════════�
 		if [ $cable_state -eq 1 ] ; then
 			textl2="🔒$greenb Connected to network via Ethernet$white\t\t\t\t"
 		else
-			echo && echo -e " ⚠️ $orangeb Network connection information$grey"
+			echo && echo -e "$whiteh i $white Network connection information$grey"
 			echo -e "[+] ESSID: $yellow$essid$grey\tFREQ: $yellow$ap_freq$grey"
 			textl2="⚠️ $orangeb Connected to the network via Wi-Fi$white\t\t\t"
 		fi
@@ -524,11 +548,11 @@ $white╚═══════════════════════�
 
 		case $level in
 			1 )
-				echo && echo -e "$orangeh $nb_conn_established $grey$orangeb connection(s) in progress$grey\t\t\t\tDisplay Loopback $state_display_conn_lo"
-				textl3="⚠️  $orangeh $nb_conn_established $grey$orangeb connection(s) in progress$white\t\t\t\t";;
+				echo && echo -e "$orangeh $nb_conn_established $grey$orangeb unknown connection(s) in progress$grey\t\t\t\tDisplay Loopback $state_display_conn_lo"
+				textl3="⚠️  $orangeh $nb_conn_established $grey$orangeb unknown connection(s) in progress$white\t\t\t";;
 			2 | 3 )
 				echo && echo -e "$greenh $nb_conn_established $greenb connection(s) in progress$grey\t\t\t\tDisplay Loopback $state_display_conn_lo"
-				textl3="⚠️  $greenh $nb_conn_established $greenb connection(s) in progress$white\t\t\t\t";;
+				textl3="🔒 $greenh $nb_conn_established $greenb connection(s) in progress$white\t\t\t\t";;
 		esac
 
 		echo -e "────────────────────────────────────────────────────────────────────────────────┐"
@@ -542,8 +566,16 @@ $white╚═══════════════════════�
 
 	#Connections listen
 	if [ $nb_conn_listen -ne 0 ] ; then
-		echo && echo -e "$yellowh $nb_conn_listen $yellowb active service(s)$grey"
-		textl4="⚠️  $yellowh $nb_conn_listen $yellowb active service(s)$white\t\t\t\t\t"
+		echo -e "NBUBB: $conn_listen_loopback"
+		case $conn_listen_loopback in
+			0 ) 
+				echo && echo -e "$yellowh $nb_conn_listen $yellowb active service(s)$grey"
+				textl4="⚠️  $yellowh $nb_conn_listen $yellowb active service(s)$white\t\t\t\t\t";;
+
+			1 ) 
+				echo && echo -e "$greenh $nb_conn_listen $greenb active service(s)$grey"
+				textl4="🔒 $greenh $nb_conn_listen $greenb active service(s)$white\t\t\t\t\t";;
+		esac
 
 		echo -e "────────────────────────────────────────────────┐"
 		echo -e "     Services state 'LISTEN'\t\tPID\t│"
