@@ -566,7 +566,6 @@ $white╚═══════════════════════�
 
 	#Connections listen
 	if [ $nb_conn_listen -ne 0 ] ; then
-		echo -e "NBUBB: $conn_listen_loopback"
 		case $conn_listen_loopback in
 			0 ) 
 				echo && echo -e "$yellowh $nb_conn_listen $yellowb active service(s)$grey"
