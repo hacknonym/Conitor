@@ -88,7 +88,7 @@ while [ true ] ; do
 		c=0
 		for i in $(echo -e "$interface") ; do
 			c=$(($c + 1))
-			echo -e "[+] Interface $white$c$grey: $yellow$i$grey"
+			echo -e "    └─Interface $white$c$grey: $yellow$i$grey"
 		done
 	)
 
@@ -119,16 +119,15 @@ while [ true ] ; do
 	  		conn_block "$lhost" $lport "$rhost" $rport $pid "$progname"
 	  		
 	  		if [ "$rhost" != "127.0.0.1" ] ; then
-	  			echo -e "[+]  $yellow$lhost$grey:$green$lport$grey\t\t$yellow$rhost$grey:$green$rport$grey    \t$pid\t$progname\t│"
-	  		
+	  			echo -e "│  $yellow$lhost$grey:$green$lport$grey\t$yellow$rhost$grey:$green$rport$grey    \t$pid\t$progname   \t│"
 	  		#Display loopback connection if '$display_conn_lo' = 1
 	  		elif [ "$rhost" = "127.0.0.1" -a $display_conn_lo -eq 1 ] ; then
-	  			echo -e "[+]  $yellow$lhost$grey:$green$lport$grey\t\t$yellow$rhost$grey:$green$rport$grey    \t$pid\t$progname\t│"
+	  			echo -e "│  $yellow$lhost$grey:$green$lport$grey\t$yellow$rhost$grey:$green$rport$grey    \t$pid\t$progname   \t│"
 	  		fi
 	    done
     )
 
-    #Popup 'New Connections'
+    #Popup 'New unknown Connections'
 	if [ $nb_conn_established -ne 0 -a $state -eq 1 -a $level -eq 1 ] ; then
 		state=0
 		notify-send --urgency normal --expire-time 2500 -i $ICON_PATH "New unknown connections"
@@ -144,28 +143,28 @@ while [ true ] ; do
 		done
 		echo -e "$c"
     )
-    conn_listen_loopback=$(
-    	conn_listen_loopback=1  #initial state -> Good
-	    for i in $(sudo $NETSTAT -puntl | cut -c 21- | grep -e "LISTEN" | sort | tr ' ' '_') ; do
-		    correct=$(echo -e "$i" | tr '_' ' ')
-		    lhost=$(echo -e "$correct" | cut -d ' ' -f 1 | cut -d ':' -f 1)
 
-		    #If among all the services, there is one listening on an address range other than 127.0.0.1, then there is a potential risk
-	    	if [ "$lhost" = "127.0.0.1" ] ; then  #127.0.0.1
-		    	echo -n
-		    elif [ -z "$lhost" ] ; then
-		    	lhost=$(echo -e "$correct" | cut -d ' ' -f 1 | cut -d ':' -f 3)
-		    	if [ "$lhost" = "1" ] ; then      #::1
-		    		echo -n
-		    	else
-		    		conn_listen_loopback=0        #=0 -> do  not listen in loopback (potencial risk)
-		    	fi
-		    else
-		    	conn_listen_loopback=0
-			fi
-		done
-		echo -e "$conn_listen_loopback"
-    )
+    #Listen on loopback
+	conn_listen_loopback=1  #initial state -> Good
+    for i in $(sudo $NETSTAT -puntl | cut -c 21- | grep -e "LISTEN" | sort | tr ' ' '_') ; do
+	    correct=$(echo -e "$i" | tr '_' ' ')
+	    lhost=$(echo -e "$correct" | cut -d ' ' -f 1 | cut -d ':' -f 1)
+
+	    #If among all the services, there is one listening on an address range other than 127.0.0.1, then there is a potential risk
+    	if [ "$lhost" = "127.0.0.1" ] ; then  #127.0.0.1
+	    	echo -n
+	    elif [ -z "$lhost" ] ; then
+	    	lhost=$(echo -e "$correct" | cut -d ' ' -f 1 | cut -d ':' -f 3)
+	    	if [ "$lhost" = "1" ] ; then      #::1
+	    		echo -n
+	    	else
+	    		conn_listen_loopback=0        #=0 -> do  not listen in loopback (potencial risk)
+	    	fi
+	    else
+	    	conn_listen_loopback=0
+		fi
+	done
+
     conn_listen=$(
 	    for i in $(sudo $NETSTAT -puntl | cut -c 21- | grep -e "LISTEN" | sort | tr ' ' '_') ; do
 		    correct=$(echo -e "$i" | tr '_' ' ')
@@ -180,7 +179,19 @@ while [ true ] ; do
 		    rport=$(echo -e "$correct" | awk '{print $2}' | cut -d ':' -f 2)
 		    pid=$(echo -e "$correct" | awk '{print $4}' | cut -d '/' -f 1)
 		    progname=$(echo -e "$correct" | awk '{print $4}' | cut -d '/' -f 2)
-		    echo -e "[+]  $white$progname$grey\tlisten on port $orange$lport$grey\t$pid\t│"
+		    
+		    if [ "$lhost" = "127.0.0.1" ] ; then  #127.0.0.1
+		    	echo -e "│    $white$progname$grey\tlisten on port $greenb$lport$grey\t$pid\t│"
+		    elif [ -z "$lhost" ] ; then
+		    	lhost=$(echo -e "$correct" | cut -d ' ' -f 1 | cut -d ':' -f 3)
+		    	if [ "$lhost" = "1" ] ; then      #::1
+		    		echo -e "│    $white$progname$grey\tlisten on port $greenb$lport$grey\t$pid\t│"
+		    	else
+		    		echo -e "│    $white$progname$grey\tlisten on port $white$orange$lport$grey\t$pid\t│"
+		    	fi
+		    else
+		    	echo -e "│    $white$progname$grey\tlisten on port $white$orange$lport$grey\t$pid\t│"
+			fi
 	    done
     )
 
@@ -220,10 +231,10 @@ while [ true ] ; do
 	)
 	list_devices=$(
 		c=0
-		for i in $(ls -lt /media/$USERNAME/ | cut -d '.' -f 2 | cut -c 11- | grep -v ":" | tr ' ' 'µ') ; do
+		for i in $(ls -lt /media/$USERNAME/ | grep -e ":" | cut -d ':' -f 2 | cut -c 4- | tr ' ' 'µ') ; do
 			c=$(($c+1))
 			correct=$(echo -e "$i" | tr 'µ' ' ')
-			echo -e "[+] Device $white$c$grey: $yellow$correct$grey"
+			echo -e "    └─Device $white$c$grey: $yellow$correct$grey"
 		done
 	)
 
@@ -237,7 +248,7 @@ while [ true ] ; do
 
 		elif [ $nb_sdb -gt $old_nb_sdb ] ; then
 			old_nb_sdb="$nb_sdb"
-			sleep 0.5
+			sleep 1		#time to mount the partition(s)
 			sdb_name=$(df -hT | grep -e "$sdb_device" | cut -d '%' -f 2 | cut -c 2-)
 			notify-send --urgency normal --expire-time 2500 -i $ICON_PATH "Device $sdb_name detected"
 			#Export antivirus() function in the current shell
@@ -256,7 +267,6 @@ while [ true ] ; do
 			old_nb_sdb="$nb_sdb"
 		fi
 	fi
-
 	
 	clear
 	# ----------------------Main panel------------------------- #
@@ -293,7 +303,7 @@ $white╚═══════════════════════�
 			textl2="🔒$greenb Connected to network via Ethernet$white\t\t\t\t"
 		else
 			echo && echo -e "$whiteh i $white Network connection information$grey"
-			echo -e "[+] ESSID: $yellow$essid$grey\tFREQ: $yellow$ap_freq$grey"
+			echo -e "    └─ESSID: $yellow$essid$grey\tFREQ: $yellow$ap_freq$grey"
 			textl2="⚠️ $orangeb Connected to the network via Wi-Fi$white\t\t\t"
 		fi
 	fi
@@ -314,24 +324,24 @@ $white╚═══════════════════════�
 
 		case $level in
 			1 )
-				echo && echo -e "$orangeh $nb_conn_established $grey$orangeb unknown connection(s) in progress$grey\t\t\t\tDisplay Loopback $state_display_conn_lo"
+				echo && echo -e "$orangeh $nb_conn_established $grey$orangeb unknown connection(s) in progress$grey\t\tDisplay Loopback $state_display_conn_lo"
 				textl3="⚠️  $orangeh $nb_conn_established $grey$orangeb unknown connection(s) in progress$white\t\t\t";;
 			2 )
-				echo && echo -e "$greenh $nb_conn_established $greenb connection(s) in progress$grey\t\t\t\tDisplay Loopback $state_display_conn_lo"
+				echo && echo -e "$greenh $nb_conn_established $greenb connection(s) in progress$grey\t\tDisplay Loopback $state_display_conn_lo"
 				textl3="🔒 $greenh $nb_conn_established $greenb connection(s) in progress$white\t\t\t\t";;
 			3 ) 
-				echo && echo -e "$greenh $nb_conn_established $greenb connection(s) in progress$grey\t\t\t\tDisplay Loopback $state_display_conn_lo"
+				echo && echo -e "$greenh $nb_conn_established $greenb connection(s) in progress$grey\t\tDisplay Loopback $state_display_conn_lo"
 				textl3="🔒 $greenh $nb_conn_established $greenb connection(s) in progress$white\t\t\t\t"
 
 				#Display automatically loopback connections when level equal 3
 				display_conn_lo=1;;
 		esac
 
-		echo -e "────────────────────────────────────────────────────────────────────────────────┐"
-		echo -e "     Local Address\t\tRemote Address\t\tPID\tProgram Name\t│"
-		echo -e "────────────────────────────────────────────────────────────────────────────────┘"
+		echo -e "┌───────────────────────────────────────────────────────────────────────┐"
+		echo -e "│  Local Address\tRemote Address\t\tPID\tProgram Name\t│"
+		echo -e "└───────────────────────────────────────────────────────────────────────┘"
 		echo -e "$conn_established"
-		echo -e "────────────────────────────────────────────────────────────────────────────────┘"
+		echo -e "└───────────────────────────────────────────────────────────────────────┘"
 	else
 		textl3="🔒$greenb No connections in progress$white\t\t\t\t"
 	fi
@@ -348,11 +358,11 @@ $white╚═══════════════════════�
 				textl4="🔒 $greenh $nb_conn_listen $greenb active service(s)$white\t\t\t\t\t";;
 		esac
 
-		echo -e "────────────────────────────────────────────────┐"
-		echo -e "     Services state 'LISTEN'\t\tPID\t│"
-		echo -e "────────────────────────────────────────────────┘"
+		echo -e "┌───────────────────────────────────────────────┐"
+		echo -e "│  Services state 'LISTEN'\t\tPID\t│"
+		echo -e "└───────────────────────────────────────────────┘"
 		echo -e "$conn_listen"
-		echo -e "────────────────────────────────────────────────┘"
+		echo -e "└───────────────────────────────────────────────┘"
 	else
 		textl4="🔒$greenb No active service$white\t\t\t\t\t\t"
 	fi
