@@ -4,6 +4,10 @@
 #author:hacknonym
 #launch:./conitor.sh   |or|   bash conitor.sh   |or|   . conitor.sh
 
+source options.sh
+source startup.sh
+source loop.sh
+
 #terminal text color code
 cyan='\e[0;36m'
 purple='\e[0;7;35m'
@@ -31,27 +35,18 @@ blueh='\e[0;44;1m'
 
 MAIN_PATH=$(pwd)
 USERNAME=$(whoami)
+AUTH_FILE="$MAIN_PATH/authorized.txt"
 LOG_FILE="$MAIN_PATH/conitor.log"
 #LOG_FILE="/var/log/conitor/conitor.log"
 APP_PATH="/usr/share/applications/Conitor.desktop"
 ICON_PATH="/usr/share/icons/Conitor.ico"
 NETSTAT=$(which netstat)
 
+touch $AUTH_FILE
 touch $LOG_FILE
 
-
-
-state=1        #popup 'New Connections'
+state=1        #popup 'New unknown onnections'
 cable_state=0  #Network
-
-#Downloads
-old_nb_file=$(
-	c=0
-	for i in $(ls -l $DOWNLOAD_PATH | grep -e ":" | awk '{print $1}'); do
-		c=$(($c + 1))
-	done
-	echo -e "$c"
-)
 
 #External devices
 old_nb_sdb=$(
@@ -62,238 +57,9 @@ old_nb_sdb=$(
 	echo -e "$c"
 )
 
-function options_quit(){
-	echo
-	#Quit the program
-	read -p "[?] Quit (Y/n)> " -n 1 -e quit_prog
-	if [[ "$quit_prog" =~ ^[YyOo]$ ]] ; then
-		exit 1
-	fi
-
-	#Loop frequency
-	default_frequency="$frequency"
-	echo -ne "[?] Frequency current($yellow$default_frequency$grey s)"
-	read -p "> " frequency
-	frequency="${frequency:-${default_frequency}}"
-
-	#Kill a PID
-	read -p "[?] Kill a process (Y/n)> " -n 1 -e kill_proc
-	if [[ "$kill_proc" =~ ^[YyOo]$ ]] ; then
-		read -p "[?] Specify the PID > " pidnum
-		sudo kill $pidnum 1> /dev/null
-	fi
-
-	#Program level
-	default_level="$level"
-	echo -ne "[?] Modify the level current($yellow$default_level$grey)"
-	read -p " (Y/n)> " -n 1 -e modify_level
-	if [[ "$modify_level" =~ ^[YyOo]$ ]] ; then
-		echo
-		echo -e "Specify the desired level"
-		echo -e " [1] : No restrictions"
-		echo -e " [2] : Block connections except Loopback, Firefox-ESR and Tor"
-		echo -e " [3] : Block connections except Loopback"
-		echo
-		read -p "(1/2/3)> " -n 1 -e level
-		level="${level:-${default_level}}"
-		echo
-	fi
-
-	#Downloads Antivirus
-	default_enable_downloads_analysis="$enable_downloads_analysis"
-	echo -ne "[?] Enable Downloads folder protection (0/1) current($yellow$default_enable_downloads_analysis$grey)"
-	read -p "> " -n 1 -e enable_downloads_analysis
-	enable_downloads_analysis="${enable_downloads_analysis:-${default_enable_downloads_analysis}}"
-
-	#External devices Antivirus
-	default_enable_sdb_analysis="$enable_sdb_analysis"
-	echo -ne "[?] Enable External devices protection (0/1) current($yellow$default_enable_sdb_analysis$grey)"
-	read -p "> " -n 1 -e enable_sdb_analysis
-	enable_sdb_analysis="${enable_sdb_analysis:-${default_enable_sdb_analysis}}"
-
-	#Display loopback connections
-	default_display_conn_lo="$display_conn_lo"
-	echo -ne "[?] Display loopback connection (0/1) current($yellow$default_display_conn_lo$grey)"
-	read -p "> " -n 1 -e display_conn_lo
-	display_conn_lo="${display_conn_lo:-${default_display_conn_lo}}"
-
-	#Display LOG file
-	read -p "[?] Display log file (Y/n)> " -n 1 -e display_log
-	if [[ "$display_log" =~ ^[YyOo]$ ]] ; then
-		xterm -fa monaco -fs 10 -T "LOG" -geometry "110x30" -bg black -fg grey -e "tail -f $LOG_FILE" & 1> /dev/null
-	fi
-}
-
 trap options_quit INT
 
-# ---------------------Functions used at startup-------------------------- #
-
-function user_privs(){
-	if [ $EUID -eq 0 ] ; then
-		echo -n
-	else
-		echo -e "[x] You do not have root privileges"
-  		exit 1
-	fi
-}
-
-function shortcut(){
-	which conitor 1> /dev/null 2>&1 || { 
-		read -p "[?] Do you want to create a shortcut for conitor in your system (Y/n)> " -n 1 -e option
-		if [[ "$option" =~ ^[YyOo]$ ]] ; then
-			#echo -e "alias conitor=\"cd $MAIN_PATH && ./conitor.sh\"" >> ~/.bashrc
-			rm -f /usr/local/sbin/conitor
-			touch /usr/local/sbin/conitor
-			echo "#!/bin/bash" > /usr/local/sbin/conitor
-			echo "cd $MAIN_PATH && ./conitor.sh \$1 \$2 \$3" >> /usr/local/sbin/conitor
-			cp "$MAIN_PATH/config/Conitor.desktop" $APP_PATH
-			cp "$MAIN_PATH/icons/Conitor.ico" $ICON_PATH
-			sudo chmod +x /usr/local/sbin/conitor
-			echo -e "[+] Used the shortcut$yellow conitor$grey"
-		fi
-	}
-}
-
-function verify_prog(){
-	which $1 1> /dev/null 2>&1 || { 
-    	echo -e "$grey[x] $1$yellow not installed$grey"
-    	echo -ne "[+] Installation of $yellow$1$grey in progress..."
-    	sudo apt-get install -y $2 1> /dev/null
-    	echo -e "$green OK$grey";
-    }
-}
-
-function launch(){
-	user_privs
-	shortcut
-	verify_prog "netstat" "net-tools"
-	verify_prog "clamscan" "clamav"
-	verify_prog "xterm" "xterm"
-	verify_prog "zenity" "zenity"
-
-	default_lang="EN"
-	read -p "[?] Language (EN/FR/ES/DE/IT)> " -n 2 -e lang
-	lang="${lang:-${default_lang}}"
-	foldername=$(cat $MAIN_PATH/lang.txt | grep -ie "$lang" | cut -d ' ' -f 2)
-	DOWNLOAD_PATH="$HOME/$foldername"
-
-	default_frequency="0.1"
-	echo -ne "[?] Frequency default($yellow$default_frequency$grey s)"
-	read -p "> " frequency
-	frequency="${frequency:-${default_frequency}}"
-
-	#level defaul -> "No restrictions"
-	default_level=1
-	echo
-	echo -e "Specify the desired level  default($yellow$default_level$grey)"
-	echo -e " [1] : No restrictions"
-	echo -e " [2] : Block connections except Loopback, Firefox-ESR and Tor"
-	echo -e " [3] : Block connections except Loopback"
-	echo
-	read -p "(1/2/3)> " -n 1 -e level
-	level="${level:-${default_level}}"
-	echo
-
-	#Downloads Antivirus
-	default_enable_downloads_analysis=1
-	echo -ne "[?] Enable Downloads folder protection (0/1) default($yellow$default_enable_downloads_analysis$grey)"
-	read -p "> " -n 1 -e enable_downloads_analysis
-	enable_downloads_analysis="${enable_downloads_analysis:-${default_enable_downloads_analysis}}"
-
-	#External devices Antivirus
-	default_enable_sdb_analysis=1
-	echo -ne "[?] Enable External devices protection (0/1) default($yellow$default_enable_sdb_analysis$grey)"
-	read -p "> " -n 1 -e enable_sdb_analysis
-	enable_sdb_analysis="${enable_sdb_analysis:-${default_enable_sdb_analysis}}"
-
-	#Display loopback connections
-	default_display_conn_lo=0
-	echo -ne "[?] Display loopback connection (0/1) default($yellow$default_display_conn_lo$grey)"
-	read -p "> " -n 1 -e display_conn_lo
-	display_conn_lo="${display_conn_lo:-${default_display_conn_lo}}"
-
-	#Display LOG file
-	read -p "[?] Display log file (Y/n)> " -n 1 -e display_log
-	if [[ "$display_log" =~ ^[YyOo]$ ]] ; then
-		xterm -fa monaco -fs 10 -T "LOG" -geometry "110x30" -bg black -fg grey -e "tail -f $LOG_FILE" & 1> /dev/null
-	fi
-
-	#Update & Upgrade
-	read -p "[?] Make update (Y/n)> " -n 1 -e make_update
-	if [[ "$make_update" =~ ^[YyOo]$ ]] ; then
-		echo -e "[+] Update in progres..."
-		sudo apt-get update 1> /dev/null
-		echo -e "[*] Upgrade clamav.."
-		sudo /usr/bin/freshclam 1> /dev/null
-	fi
-}
-
 launch
-
-# --------------------Functions use in the loop--------------------------- #
-
-function conn_block(){
-
-	if [ $level -eq 3 ]; then
-		#Do not block loopback connections
-		if [ "$3" != "127.0.0.1" ] ; then
-			sudo kill $5 1> /dev/null
-			echo "$current_date :: PID $5 from $6 service was killed, connection state $1:$2 $3:$4" >> $LOG_FILE
-			notify-send --urgency normal --expire-time 2500 -i $ICON_PATH "$3:$4 from $6 service was kill"
-			#zenity --info --ellipsize --text="$3:$4 from $6 service was kill" & 1> /dev/null
-		fi
-	elif [ $level -eq 2 ]; then
-		#Do not block loopback connections
-		if [ "$3" != "127.0.0.1" ] ; then
-
-			#Kill all PID except Firefox-esr, Tor, :9050, :9150, :9151 <- Tor Browser
-			if [ "$6" != "firefox-esr" -a "$6" != "tor" -a "$4" != "9050" -a "$4" != "9150" -a "$4" != "9151" ] ; then
-				sudo kill $5 1> /dev/null
-				echo "$current_date :: PID $5 from $6 service was killed, connection state $1:$2 $3:$4" >> $LOG_FILE
-				notify-send --urgency normal --expire-time 2500 -i $ICON_PATH "$3:$4 from $6 service was killed"
-			fi
-		fi
-	fi
-}
-
-function antivirus(){
-	white='\e[0;37;1m'
-	grey='\e[0;37m'
-	redb='\e[0;31;1m'
-	yellow='\e[0;33m'
-
-	MAIN_PATH=$(pwd)
-	LOG_FILE="$MAIN_PATH/conitor.log"
-	DOWNLOAD_PATH="$HOME/$foldername"
-
-	echo -e "Scanning $yellow$1$grey in progress..."
-
-	for i in $(clamscan -r -i "$1" | tr ' ' 'µ') ; do
-	  correct=$(echo -e "$i" | tr 'µ' ' ')
-
-	  if echo -e "$correct" | grep -e "FOUND" 1> /dev/null ; then
-	    echo -e "[!] Virus FOUND  $redb$correct$grey"
-	    current_date=$(date "+%d-%m-%Y %H:%M:%S")
-	    malware=$(echo -e "$correct" | grep -e "FOUND" | cut -d ':' -f 1)
-	    echo "$current_date :: Malware '$malware' detected" >> $LOG_FILE
-	    read -p "[?] Virus was found, remove it (Y/n)> " -n 1 -e delete
-
-	    if [[ "$delete" =~ ^[YyOo]$ ]] ; then
-	      echo -ne "[+] Remove '$malware' in progress..."
-	      sudo rm -rf "$malware"
-	      echo "$current_date :: Malware '$malware' deleted" >> $LOG_FILE
-	      echo -e " OK" && echo
-	    else
-	      echo
-	    fi
-
-	  else
-	   echo -e "$correct"
-	  fi
-	done
-
-	#read enter
-}
 
 resize -s 36 86 1> /dev/null
 
@@ -363,9 +129,9 @@ while [ true ] ; do
     )
 
     #Popup 'New Connections'
-	if [ $nb_conn_established -ne 0 -a $state -eq 1 ] ; then
+	if [ $nb_conn_established -ne 0 -a $state -eq 1 -a $level -eq 1 ] ; then
 		state=0
-		notify-send --urgency normal --expire-time 2500 -i $ICON_PATH "New Connections"
+		notify-send --urgency normal --expire-time 2500 -i $ICON_PATH "New unknown connections"
 	elif [ $nb_conn_established -eq 0 -a $state -eq 0 ] ; then
 		state=1
 	fi
@@ -550,9 +316,15 @@ $white╚═══════════════════════�
 			1 )
 				echo && echo -e "$orangeh $nb_conn_established $grey$orangeb unknown connection(s) in progress$grey\t\t\t\tDisplay Loopback $state_display_conn_lo"
 				textl3="⚠️  $orangeh $nb_conn_established $grey$orangeb unknown connection(s) in progress$white\t\t\t";;
-			2 | 3 )
+			2 )
 				echo && echo -e "$greenh $nb_conn_established $greenb connection(s) in progress$grey\t\t\t\tDisplay Loopback $state_display_conn_lo"
 				textl3="🔒 $greenh $nb_conn_established $greenb connection(s) in progress$white\t\t\t\t";;
+			3 ) 
+				echo && echo -e "$greenh $nb_conn_established $greenb connection(s) in progress$grey\t\t\t\tDisplay Loopback $state_display_conn_lo"
+				textl3="🔒 $greenh $nb_conn_established $greenb connection(s) in progress$white\t\t\t\t"
+
+				#Display automatically loopback connections when level equal 3
+				display_conn_lo=1;;
 		esac
 
 		echo -e "────────────────────────────────────────────────────────────────────────────────┐"
