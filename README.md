@@ -2,7 +2,7 @@
 
 [![Version](https://img.shields.io/badge/Version-1.0-blue)]()
 [![Language](https://img.shields.io/badge/Bash-4.2%2B-brightgreen)]()
-[![Available](https://img.shields.io/badge/Available-Kali%20Linux-red)]()
+[![Available](https://img.shields.io/badge/Available-Linux-red)]()
 [![Download](https://img.shields.io/badge/Size-140Ko-brightgreen)]()
 [![License](https://img.shields.io/badge/License-GPL%20v3%2B-red)]()
 
