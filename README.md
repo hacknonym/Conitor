@@ -19,6 +19,8 @@
 	* No restrictions
 	* Block connections except Loopback, Firefox-ESR and Tor (Service/Browser)
 	* Block connections except Loopback
+- Kill the process in real time if the connection is not authorized
+- You can allow connections of your choice
 - You can change the level at any time
 - Automatic antivirus scan of downloaded files
 - Automatic antivirus scan of connected external devices
