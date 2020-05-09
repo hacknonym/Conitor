@@ -71,10 +71,17 @@ while [ true ] ; do
 	current_date=$(date "+%d-%m-%Y %H:%M:%S")
 	hostname=$(uname -n)
 
-	#Network
+	#Network Wi-Fi
 	private_ip=$(hostname -I)
-	essid=$(iwgetid --raw)
 	ap_freq=$(iwgetid --freq | cut -d ':' -f 2)
+	essid=$(iwgetid --raw)
+	essid_file=$(ls -1F /etc/NetworkManager/system-connections/ | grep -m 1 "$essid")
+	if [ ! -z "$essid_file" ] ; then
+		wifipass=$(cat "/etc/NetworkManager/system-connections/$essid_file" | grep -e "psk=" | cut -d '"' -f 2 | cut -c 5-)
+		sizepass=$(echo -e "$wifipass" | wc -m)
+	fi
+
+	#Network Interfaces
 	wlan_interface=$(iwgetid --freq | cut -d ' ' -f 1)
 	interface=$(ip link show | grep -v link | grep -e "UP" | grep -e "LOWER_UP" | cut -d ' ' -f 2 | sed 's/://g' | grep -v lo)
 	nb_interfaces=$(
@@ -301,9 +308,17 @@ $white╚═══════════════════════�
 	else
 		if [ $cable_state -eq 1 ] ; then
 			textl2="🔒$greenb Connected to network via Ethernet$white\t\t\t\t"
+		elif [ -z "$wifipass" ] ; then
+			echo && echo -e "$whiteh i $white Network connection information$grey"
+			echo -e "    └─ESSID: $yellow$essid$grey\tFREQ: $yellow$ap_freq$grey\tKEY: $redh ABSENT $grey"
+			textl2="⚠️ $orangeb Connected to the network via Wi-Fi$white\t\t\t"
+		elif [ $sizepass -gt 20 ] ; then
+			echo && echo -e "$whiteh i $white Network connection information$grey"
+			echo -e "    └─ESSID: $yellow$essid$grey\tFREQ: $yellow$ap_freq$grey\tKEY: $greenh SECURE $grey"
+			textl2="🔒$greenb Connected to the network via Wi-Fi$white\t\t\t"
 		else
 			echo && echo -e "$whiteh i $white Network connection information$grey"
-			echo -e "    └─ESSID: $yellow$essid$grey\tFREQ: $yellow$ap_freq$grey"
+			echo -e "    └─ESSID: $yellow$essid$grey\tFREQ: $yellow$ap_freq$grey\tKEY: $orangeh NOT SECURE $grey"
 			textl2="⚠️ $orangeb Connected to the network via Wi-Fi$white\t\t\t"
 		fi
 	fi
@@ -324,13 +339,13 @@ $white╚═══════════════════════�
 
 		case $level in
 			1 )
-				echo && echo -e "$orangeh $nb_conn_established $grey$orangeb unknown connection(s) in progress$grey\t\tDisplay Loopback $state_display_conn_lo"
+				echo && echo -e "$orangeh $nb_conn_established $grey$orangeb unknown connection(s) in progress$grey\t\t\tDisplay Loopback $state_display_conn_lo"
 				textl3="⚠️  $orangeh $nb_conn_established $grey$orangeb unknown connection(s) in progress$white\t\t\t";;
 			2 )
-				echo && echo -e "$greenh $nb_conn_established $greenb connection(s) in progress$grey\t\tDisplay Loopback $state_display_conn_lo"
+				echo && echo -e "$greenh $nb_conn_established $greenb connection(s) in progress$grey\t\t\tDisplay Loopback $state_display_conn_lo"
 				textl3="🔒 $greenh $nb_conn_established $greenb connection(s) in progress$white\t\t\t\t";;
 			3 ) 
-				echo && echo -e "$greenh $nb_conn_established $greenb connection(s) in progress$grey\t\tDisplay Loopback $state_display_conn_lo"
+				echo && echo -e "$greenh $nb_conn_established $greenb connection(s) in progress$grey\t\t\tDisplay Loopback $state_display_conn_lo"
 				textl3="🔒 $greenh $nb_conn_established $greenb connection(s) in progress$white\t\t\t\t"
 
 				#Display automatically loopback connections when level equal 3

@@ -95,6 +95,9 @@ function add_authorized_connection(){
 }
 
 function del_authorized_connection(){
+	for i in $(cat $AUTH_FILE | tr ' ' '_') ; do
+		echo -e " -  $white$i$grey" | tr '_' ' '
+	done
 	echo -ne "$blueb[?]$grey Specify the name of the program to be unauthorized"
 	read -p "> " prog_name
 	if [ ! -z $prog_name ] ; then
