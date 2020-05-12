@@ -2,7 +2,7 @@
 
 [![Version](https://img.shields.io/badge/Version-1.0-blue)]()
 [![Language](https://img.shields.io/badge/Bash-4.2%2B-brightgreen)]()
-[![Available](https://img.shields.io/badge/Available-Linux%20Debian-red)]()
+[![Available](https://img.shields.io/badge/Available-Linux%20Debian-orange)]()
 [![Download](https://img.shields.io/badge/Size-140Ko-brightgreen)]()
 [![License](https://img.shields.io/badge/License-GPL%20v3%2B-red)]()
 
@@ -36,13 +36,13 @@ Necessary to have root rights
 ```bash
 git clone https://github.com/hacknonym/Conitor.git
 cd Conitor
-chmod +x conitor.sh
-./conitor.sh
+sudo chmod +x conitor.sh
+sudo ./conitor.sh
 ```
 ### Usage 
 ```bash
 cd Conitor
-./conitor.sh
+sudo ./conitor.sh
 ```
 
 ## Tools Overview
