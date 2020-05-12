@@ -16,7 +16,7 @@ function shortcut(){
 			rm -f /usr/local/sbin/conitor
 			touch /usr/local/sbin/conitor
 			echo "#!/bin/bash" > /usr/local/sbin/conitor
-			echo "cd $MAIN_PATH && ./conitor.sh \$1 \$2 \$3" >> /usr/local/sbin/conitor
+			echo "cd $MAIN_PATH && sudo ./conitor.sh \$1 \$2 \$3" >> /usr/local/sbin/conitor
 			cp "$MAIN_PATH/config/Conitor.desktop" $APP_PATH
 			cp "$MAIN_PATH/icons/Conitor.ico" $ICON_PATH
 			sudo chmod +x /usr/local/sbin/conitor
