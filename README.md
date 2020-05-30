@@ -17,10 +17,10 @@
 ## Features !
 - Has **3 levels** of security
 	* No restrictions
-	* Block connections except Loopback, Firefox-ESR and Tor (Service/Browser)
+	* Block connections except Loopback, and your exceptions
 	* Block connections except Loopback
 - Kill the process in real time if the connection is not authorized
-- You can allow connections of your choice
+- You can allow connections of your choice (add them to the file authorized.txt)
 - You can change the level at any time
 - Automatic antivirus scan of downloaded files
 - Automatic antivirus scan of connected external devices
@@ -36,7 +36,7 @@ Necessary to have root rights
 ```bash
 git clone https://github.com/hacknonym/Conitor.git
 cd Conitor
-sudo chmod +x conitor.sh
+sudo chmod +x *.sh
 sudo ./conitor.sh
 ```
 ### Usage 
