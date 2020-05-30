@@ -68,7 +68,7 @@ function launch(){
 	echo
 	echo -e "Specify the desired level  default($yellow$default_level$grey)"
 	echo -e " $white[1]$grey : No restrictions"
-	echo -e " $white[2]$grey : Block connections except Loopback, Firefox-ESR and Tor"
+	echo -e " $white[2]$grey : Block connections except Loopback, and you exceptions"
 	echo -e " $white[3]$grey : Block connections except Loopback"
 	echo
 	read -p "(1/2/3)> " -n 1 -e level
