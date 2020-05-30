@@ -36,7 +36,7 @@ Necessary to have root rights
 ```bash
 git clone https://github.com/hacknonym/Conitor.git
 cd Conitor
-sudo chmod +x *.sh
+sudo chmod +x conitor.sh
 sudo ./conitor.sh
 ```
 ### Usage 
