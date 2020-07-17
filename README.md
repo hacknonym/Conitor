@@ -4,7 +4,7 @@
 [![Language](https://img.shields.io/badge/Bash-4.2%2B-brightgreen.svg?style=for-the-badge)]()
 [![Available](https://img.shields.io/badge/Available-Debian-orange.svg?style=for-the-badge)]()
 [![Download](https://img.shields.io/badge/Size-140Ko-brightgreen.svg?style=for-the-badge)]()
-[![License](https://img.shields.io/badge/License-GPL%20v3%2B-red.svg?style=for-the-badge)](https://github.com/hacknonym/Plugit/blob/master/LICENSE)
+[![License](https://img.shields.io/badge/License-GPL%20v3%2B-red.svg?style=for-the-badge)](https://github.com/hacknonym/Conitor/blob/master/LICENSE)
 
 ### Author: github.com/hacknonym
 
