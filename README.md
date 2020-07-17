@@ -1,10 +1,10 @@
 # Conitor
 
-[![Version](https://img.shields.io/badge/Version-1.0-blue)]()
-[![Language](https://img.shields.io/badge/Bash-4.2%2B-brightgreen)]()
-[![Available](https://img.shields.io/badge/Available-Linux%20Debian-orange)]()
-[![Download](https://img.shields.io/badge/Size-140Ko-brightgreen)]()
-[![License](https://img.shields.io/badge/License-GPL%20v3%2B-red)]()
+[![Version](https://img.shields.io/badge/Version-1.0-blue.svg?style=for-the-badge)]()
+[![Language](https://img.shields.io/badge/Bash-4.2%2B-brightgreen.svg?style=for-the-badge)]()
+[![Available](https://img.shields.io/badge/Available-Debian-orange.svg?style=for-the-badge)]()
+[![Download](https://img.shields.io/badge/Size-140Ko-brightgreen.svg?style=for-the-badge)]()
+[![License](https://img.shields.io/badge/License-GPL%20v3%2B-red.svg?style=for-the-badge)](https://github.com/hacknonym/Plugit/blob/master/LICENSE)
 
 ### Author: github.com/hacknonym
 
@@ -20,7 +20,7 @@
 	* Block connections except Loopback, and your exceptions
 	* Block connections except Loopback
 - Kill the process in real time if the connection is not authorized
-- You can allow connections of your choice (add them to the file authorized.txt)
+- You can allow connections of your choice (add them to the file **authorized.txt**)
 - You can change the level at any time
 - Automatic antivirus scan of downloaded files
 - Automatic antivirus scan of connected external devices
@@ -46,10 +46,10 @@ sudo ./conitor.sh
 ```
 
 ## Tools Overview
-![Launch](https://user-images.githubusercontent.com/55319869/79692680-cd3fb180-8266-11ea-83a7-bb344adf7299.png)
-![Example](https://user-images.githubusercontent.com/55319869/79692696-d9c40a00-8266-11ea-9082-92f4d73e30ee.png)
-![Internal options](https://user-images.githubusercontent.com/55319869/79692715-f6604200-8266-11ea-86a6-a1410c13a6f8.png)
-![Listen services](https://user-images.githubusercontent.com/55319869/79692727-08da7b80-8267-11ea-929c-b3c7bb83c004.png)
+![Launch](https://user-images.githubusercontent.com/55319869/87787189-82b8db80-c83b-11ea-91ab-3cd58557ccaf.png)
+![Example](https://user-images.githubusercontent.com/55319869/87787194-851b3580-c83b-11ea-9db4-2209c42dc89e.png)
+![Internal options](https://user-images.githubusercontent.com/55319869/87787199-877d8f80-c83b-11ea-9217-35015d943b6e.png)
+![Listen services](https://user-images.githubusercontent.com/55319869/87787211-8c424380-c83b-11ea-82bb-f3115842dcc8.png)
 ![Antivirus scan](https://user-images.githubusercontent.com/55319869/79692739-17c12e00-8267-11ea-98ab-9e07a608fa2b.png)
 
 ## License
