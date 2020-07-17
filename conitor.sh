@@ -51,13 +51,13 @@ cable_state=0  #Network
 #External devices
 old_nb_sdb=$(
 	c=0
-	for i in $(ls /dev | grep -Eo "sd[b-z][1-9]|sd[b-z][1-9][1-9]|sd[b-z][1-9][1-9][1-9]|sd[a-z][a-z][1-9]|sd[a-z][a-z][1-9][1-9]|sd[a-z][a-z][1-9][1-9][1-9]|sd[a-z][a-z][a-z][1-9]|sd[a-z][a-z][a-z][1-9][1-9]|sd[a-z][a-z][a-z][1-9][1-9][1-9]") ; do
+	for i in $(ls /dev | grep -Eo "sd[b-z][0-9]|sd[b-z][0-9][0-9]|sd[b-z][0-9][0-9][0-9]|sd[a-z][a-z][0-9]|sd[a-z][a-z][0-9][0-9]|sd[a-z][a-z][0-9][0-9][0-9]|sd[a-z][a-z][a-z][0-9]|sd[a-z][a-z][a-z][0-9][0-9]|sd[a-z][a-z][a-z][0-9][0-9][0-9]") ; do
 		c=$(($c + 1))
 	done
 	echo -e "$c"
 )
 
-trap options_quit INT
+trap options INT
 
 launch
 
@@ -68,7 +68,7 @@ while [ true ] ; do
 	# ----------------------Variables and operations used for display------------------------- #
 
 	#System
-	current_date=$(date "+%d-%m-%Y %H:%M:%S")
+	current_date=$(date "+%d/%m/%Y-%H:%M:%S")
 	hostname=$(uname -n)
 
 	#Network Wi-Fi
@@ -95,17 +95,22 @@ while [ true ] ; do
 		c=0
 		for i in $(echo -e "$interface") ; do
 			c=$(($c + 1))
-			echo -e "    └─Interface $white$c$grey: $yellow$i$grey"
+			if ip link show | grep -e "$i" -m 1 | grep -e "POINTOPOINT" 1> /dev/null ; then
+				echo -e "    └─Interface $white$c$grey: $yellow$i$grey (P2P)"
+			else
+				echo -e "    └─Interface $white$c$grey: $yellow$i$grey"
+			fi
 		done
 	)
 
-	if [ $nb_interfaces -eq 1 ] ; then
-		if [ -z "$wlan_interface" ] ; then
-			if [ ! -z "$interface" ] ; then
-				cable_state=$(cat /sys/class/net/$interface/carrier)
-			fi
-		else
-			cable_state=0
+	if [ -z "$wlan_interface" ] ; then
+		if [ ! -z "$interface" ] ; then
+			for i in $(ip link show | grep -v link | grep -e "UP" | grep -e "LOWER_UP" | cut -d ' ' -f 2 | sed 's/://g' | grep -v lo) ; do
+				interface_state=$(cat /sys/class/net/$i/carrier)
+				if [ $interface_state -eq 1 ] ; then
+					cable_state=1
+				fi
+			done
 		fi
 	else
 		cable_state=0
@@ -205,10 +210,10 @@ while [ true ] ; do
     #Downloads
     if [ $enable_downloads_analysis -eq 1 ] ; then
     	textl1="$greenb ✔$grey Downloads folder protection enabled$white\t\t\t"
-		file=$(ls -lt $DOWNLOAD_PATH | sed -n '2 p' | cut -d ':' -f 2 | cut -c 4-)
+		file=$(ls -1t $DOWNLOAD_PATH | sed -n '1 p')
 		nb_file=$(
 			c=0
-			for i in $(ls -l $DOWNLOAD_PATH | grep -e ":" | awk '{print $1}'); do
+			for i in $(ls -1 $DOWNLOAD_PATH | tr ' ' '_'); do
 				c=$(($c + 1))
 			done
 			echo -e "$c"
@@ -231,14 +236,14 @@ while [ true ] ; do
 	#External devices    sdb1 -> sdzzz999   : 18277 devices with 999 partitions
 	nb_sdb=$(
 		c=0
-		for i in $(ls /dev | grep -Eo "sd[b-z][1-9]|sd[b-z][1-9][1-9]|sd[b-z][1-9][1-9][1-9]|sd[a-z][a-z][1-9]|sd[a-z][a-z][1-9][1-9]|sd[a-z][a-z][1-9][1-9][1-9]|sd[a-z][a-z][a-z][1-9]|sd[a-z][a-z][a-z][1-9][1-9]|sd[a-z][a-z][a-z][1-9][1-9][1-9]") ; do
+		for i in $(ls /dev | grep -Eo "sd[b-z][0-9]|sd[b-z][0-9][0-9]|sd[b-z][0-9][0-9][0-9]|sd[a-z][a-z][0-9]|sd[a-z][a-z][0-9][0-9]|sd[a-z][a-z][0-9][0-9][0-9]|sd[a-z][a-z][a-z][0-9]|sd[a-z][a-z][a-z][0-9][0-9]|sd[a-z][a-z][a-z][0-9][0-9][0-9]") ; do
 			c=$(($c + 1))
 		done
 		echo -e "$c"
 	)
 	list_devices=$(
 		c=0
-		for i in $(ls -lt /media/$USERNAME/ | grep -e ":" | cut -d ':' -f 2 | cut -c 4- | tr ' ' 'µ') ; do
+		for i in $(ls -1t /media/$USERNAME/ | tr ' ' 'µ') ; do
 			c=$(($c+1))
 			correct=$(echo -e "$i" | tr 'µ' ' ')
 			echo -e "    └─Device $white$c$grey: $yellow$correct$grey"
@@ -247,7 +252,7 @@ while [ true ] ; do
 
 	if [ $enable_sdb_analysis -eq 1 ] ; then
 		textl5="$greenb ✔$grey External devices protection enabled$white\t\t\t"
-		sdb_device=$(ls -t /dev | grep -Eo "sd[b-z][1-9]|sd[b-z][1-9][1-9]|sd[b-z][1-9][1-9][1-9]|sd[a-z][a-z][1-9]|sd[a-z][a-z][1-9][1-9]|sd[a-z][a-z][1-9][1-9][1-9]|sd[a-z][a-z][a-z][1-9]|sd[a-z][a-z][a-z][1-9][1-9]|sd[a-z][a-z][a-z][1-9][1-9][1-9]" | sed -n '1 p')
+		sdb_device=$(ls -t /dev | grep -Eo "sd[b-z][0-9]|sd[b-z][0-9][0-9]|sd[b-z][0-9][0-9][0-9]|sd[a-z][a-z][0-9]|sd[a-z][a-z][0-9][0-9]|sd[a-z][a-z][0-9][0-9][0-9]|sd[a-z][a-z][a-z][0-9]|sd[a-z][a-z][a-z][0-9][0-9]|sd[a-z][a-z][a-z][0-9][0-9][0-9]" | sed -n '1 p')
 		#nb_sdb=$(...)
 
 		if [ $nb_sdb -lt $old_nb_sdb ] ; then
@@ -298,7 +303,7 @@ $white╚═══════════════════════�
 
 	#External devices
 	if [ $nb_sdb -ne 0 ] ; then
-		echo && echo -e "$whiteh $nb_sdb $white connected device(s)$grey"
+		echo && echo -e "$whiteh $nb_sdb $white connected device(s)/partition(s)$grey"
 		echo -e "$list_devices"
 	fi
 

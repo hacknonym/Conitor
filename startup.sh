@@ -3,7 +3,7 @@ function user_privs(){
 		echo -n
 	else
 		echo -e "[x] You do not have root privileges"
-  		exit 1
+  		exit 0
 	fi
 }
 
@@ -15,8 +15,8 @@ function shortcut(){
 			#echo -e "alias conitor=\"cd $MAIN_PATH && ./conitor.sh\"" >> ~/.bashrc
 			rm -f /usr/local/sbin/conitor
 			touch /usr/local/sbin/conitor
-			echo "#!/bin/bash" > /usr/local/sbin/conitor
-			echo "cd $MAIN_PATH && sudo ./conitor.sh \$1 \$2 \$3" >> /usr/local/sbin/conitor
+			ehco -e "#!/bin/bash" > /usr/local/sbin/conitor
+			ehco -e "cd $MAIN_PATH && sudo ./conitor.sh \$1 \$2 \$3" >> /usr/local/sbin/conitor
 			cp "$MAIN_PATH/config/Conitor.desktop" $APP_PATH
 			cp "$MAIN_PATH/icons/Conitor.ico" $ICON_PATH
 			sudo chmod +x /usr/local/sbin/conitor
@@ -32,6 +32,17 @@ function verify_prog(){
     	sudo apt-get install -y $2 1> /dev/null
     	echo -e "$green OK$grey";
     }
+}
+
+function update(){
+	echo -ne "$blueb[?]$grey Make update (Y/n)"
+	read -p "> " -n 1 -e make_update
+	if [[ "$make_update" =~ ^[YyOo]$ ]] ; then
+		echo -e "$greenb[+]$grey Update in progres..."
+		sudo apt-get update 1> /dev/null
+		echo -e "$greenb[+]$grey Upgrade clamav.."
+		sudo /usr/bin/freshclam 1> /dev/null
+	fi
 }
 
 function launch(){
@@ -52,61 +63,36 @@ function launch(){
 	#Initialization of the number of files in downloads
 	old_nb_file=$(
 		c=0
-		for i in $(ls -l $DOWNLOAD_PATH | grep -e ":" | awk '{print $1}'); do
+		for i in $(ls -1 $DOWNLOAD_PATH | tr ' ' '_'); do
 			c=$(($c + 1))
 		done
 		echo -e "$c"
 	)
 
 	default_frequency="0.1"
-	echo -ne "$blueb[?]$grey Frequency default($yellow$default_frequency$grey s)"
-	read -p "> " frequency
-	frequency="${frequency:-${default_frequency}}"
+	loop_frequency
 
 	#level defaul -> "No restrictions"
 	default_level=1
 	echo
 	echo -e "Specify the desired level  default($yellow$default_level$grey)"
-	echo -e " $white[1]$grey : No restrictions"
-	echo -e " $white[2]$grey : Block connections except Loopback, and you exceptions"
-	echo -e " $white[3]$grey : Block connections except Loopback"
-	echo
-	read -p "(1/2/3)> " -n 1 -e level
-	level="${level:-${default_level}}"
-	echo
+	program_level
 
 	#Downloads Antivirus
 	default_enable_downloads_analysis=1
-	echo -ne "$blueb[?]$grey Enable Downloads folder protection (0/1) default($yellow$default_enable_downloads_analysis$grey)"
-	read -p "> " -n 1 -e enable_downloads_analysis
-	enable_downloads_analysis="${enable_downloads_analysis:-${default_enable_downloads_analysis}}"
-
+	antivirus_downloads
+	
 	#External devices Antivirus
 	default_enable_sdb_analysis=1
-	echo -ne "$blueb[?]$grey Enable External devices protection (0/1) default($yellow$default_enable_sdb_analysis$grey)"
-	read -p "> " -n 1 -e enable_sdb_analysis
-	enable_sdb_analysis="${enable_sdb_analysis:-${default_enable_sdb_analysis}}"
-
+	antivirus_external_devices
+	
 	#Display loopback connections
 	default_display_conn_lo=0
-	echo -ne "$blueb[?]$grey Display loopback connection (0/1) default($yellow$default_display_conn_lo$grey)"
-	read -p "> " -n 1 -e display_conn_lo
-	display_conn_lo="${display_conn_lo:-${default_display_conn_lo}}"
+	display_loopback_conn
 
 	#Display LOG file
-	echo -ne "$blueb[?]$grey Display log file (Y/n)"
-	read -p "> " -n 1 -e display_log
-	if [[ "$display_log" =~ ^[YyOo]$ ]] ; then
-		xterm -fa monaco -fs 10 -T "LOG" -geometry "110x30" -bg black -fg grey -e "tail -f $LOG_FILE" & 1> /dev/null
-	fi
+	display_log_file
 
 	#Update & Upgrade
-	echo -ne "$blueb[?]$grey Make update (Y/n)"
-	read -p "> " -n 1 -e make_update
-	if [[ "$make_update" =~ ^[YyOo]$ ]] ; then
-		echo -e "$greenb[+]$grey Update in progres..."
-		sudo apt-get update 1> /dev/null
-		echo -e "$greenb[+]$grey Upgrade clamav.."
-		sudo /usr/bin/freshclam 1> /dev/null
-	fi
+	update
 }
