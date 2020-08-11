@@ -15,8 +15,8 @@ function shortcut(){
 			#echo -e "alias conitor=\"cd $MAIN_PATH && ./conitor.sh\"" >> ~/.bashrc
 			rm -f /usr/local/sbin/conitor
 			touch /usr/local/sbin/conitor
-			ehco -e "#!/bin/bash" > /usr/local/sbin/conitor
-			ehco -e "cd $MAIN_PATH && sudo ./conitor.sh \$1 \$2 \$3" >> /usr/local/sbin/conitor
+			echo -e "#!/bin/bash" > /usr/local/sbin/conitor
+			echo -e "cd $MAIN_PATH && sudo ./conitor.sh \$1 \$2 \$3" >> /usr/local/sbin/conitor
 			cp "$MAIN_PATH/config/Conitor.desktop" $APP_PATH
 			cp "$MAIN_PATH/icons/Conitor.ico" $ICON_PATH
 			sudo chmod +x /usr/local/sbin/conitor
